@@ -1,0 +1,257 @@
+# Gold data contract: machine-readable version.
+# Human-readable version: docs/data-contract.md
+#
+# Owner: the healthcare-lakehouse repository (docs/contract/). Paths below are relative to it.
+# Users:
+#   - healthcare-lakehouse   contract test: gold DataFrame schemas must match this file
+#   - scripts/build_sample.py writes sample-data/gold/*.csv and validates them against this file
+#   - healthcare-semantic-model, deneb-gallery: vendored copy in contract/ with the CSVs in
+#     sample-data/gold/, written by scripts/vendor_contract.py. Do not edit the copies.
+#
+# Logical types and their physical mapping:
+#   string  -> Spark StringType   | Power BI string
+#   int     -> Spark IntegerType  | Power BI int64
+#   bigint  -> Spark LongType     | Power BI int64
+#   boolean -> Spark BooleanType  | Power BI boolean
+#   date    -> Spark DateType     | Power BI dateTime (date only)
+#
+# CSV serialisation (sample-data/gold): UTF-8 without BOM, comma separator, header row,
+# LF line endings, ISO dates (YYYY-MM-DD), booleans as true/false, null as an empty field,
+# codes always written as text with their leading zeros.
+
+contract_version: "1.1.0"
+
+tables:
+
+  dim_year:
+    description: One row per reference year in the gold window.
+    grain: year
+    primary_key: [year]
+    columns:
+      - name: year
+        type: int
+        nullable: false
+        description: Reference year. Bed counts and population are both measured on 1 January of this year.
+      - name: reference_date
+        type: date
+        nullable: false
+        description: The census date of the year, always 1 January.
+      - name: is_latest_year
+        type: boolean
+        nullable: false
+        description: True for the most recent year in the gold window only.
+
+  dim_region:
+    description: Italian regions and the two autonomous provinces (21 rows), as coded by the Ministry of Health; istat_region_name groups them into the 20 ISTAT regions.
+    grain: region_code
+    primary_key: [region_code]
+    unique: [[istat_area_code]]
+    source: docs/contract/reference/regions.csv
+    columns:
+      - name: region_code
+        type: string
+        nullable: false
+        description: Ministry of Health 3-digit region code (010 Piemonte ... 200 Sardegna; 041 Bolzano, 042 Trento).
+      - name: region_name
+        type: string
+        nullable: false
+        description: Official region or autonomous-province name.
+      - name: istat_region_name
+        type: string
+        nullable: false
+        description: ISTAT region (20 values). Equal to region_name except for the two autonomous provinces, which share Trentino-Alto Adige. Use it for views of the 20 regions; aggregate beds and population before dividing.
+      - name: istat_area_code
+        type: string
+        nullable: false
+        description: Territory code used by the ISTAT population dataflow (NUTS-2 style, e.g. ITC1, ITD1). Join key to the population source.
+      - name: geographic_area
+        type: string
+        nullable: false
+        allowed_values: [Nord-ovest, Nord-est, Centro, Sud, Isole]
+        description: ISTAT five-way geographic breakdown (NUTS-1).
+      - name: macro_area
+        type: string
+        nullable: false
+        allowed_values: [Nord, Centro, Sud e Isole]
+        description: Three-way breakdown used in Italian public reporting.
+      - name: is_autonomous_province
+        type: boolean
+        nullable: false
+        description: True for the autonomous provinces of Bolzano and Trento.
+      - name: sort_order
+        type: int
+        nullable: false
+        description: Display order, following the Ministry code order.
+
+  dim_discipline:
+    description: Hospital disciplines (clinical specialties) as coded by the Ministry of Health.
+    grain: discipline_code
+    primary_key: [discipline_code]
+    columns:
+      - name: discipline_code
+        type: string
+        nullable: false
+        description: Ministry 2-digit discipline code (e.g. 08 = Cardiologia).
+      - name: discipline_name
+        type: string
+        nullable: false
+        description: Discipline name, taken from the latest year in the gold window (SCD type 1).
+      - name: discipline_type
+        type: string
+        nullable: false
+        allowed_values: [Acuti, Riabilitazione, Lungodegenza]
+        description: Ministry grouping. Riabilitazione = codes 28, 56, 75; Lungodegenza = code 60; Acuti = everything else.
+
+  dim_facility:
+    description: Hospital sites (stabilimenti). A multi-site public hospital appears once per site.
+    grain: facility_id
+    primary_key: [facility_key]
+    unique: [[facility_id]]
+    columns:
+      - name: facility_key
+        type: int
+        nullable: false
+        description: Surrogate key, 1..N assigned by ascending facility_id over the facilities in the gold window. Stable for a given window, not across windows.
+      - name: facility_id
+        type: string
+        nullable: false
+        description: Business key. structure_code when site_subcode is null, otherwise structure_code + "-" + site_subcode (e.g. 010030-01).
+      - name: structure_code
+        type: string
+        nullable: false
+        description: Ministry 6-digit code of the hospital structure; the first 3 digits are the region code.
+      - name: site_subcode
+        type: string
+        nullable: true
+        description: 2-digit progressive of the site within a multi-site structure. Null for single-site structures.
+      - name: facility_name
+        type: string
+        nullable: false
+        description: Name of the hospital site, as published (upper case, whitespace normalised).
+      - name: address
+        type: string
+        nullable: true
+        description: Main street address of the site.
+      - name: municipality_code
+        type: string
+        nullable: false
+        description: ISTAT 6-digit municipality code (3-digit province + 3-digit municipality).
+      - name: municipality_name
+        type: string
+        nullable: false
+        description: Municipality name, as published.
+      - name: province_code
+        type: string
+        nullable: false
+        description: 2-letter province abbreviation (sigla), e.g. TO.
+      - name: region_code
+        type: string
+        nullable: false
+        references: dim_region.region_code
+        description: Region where the site is located.
+      - name: health_authority_id
+        type: string
+        nullable: false
+        description: Health authority (azienda sanitaria) the site belongs to, as region_code + 3-digit authority code (e.g. 010203). Authority codes are unique only within a region.
+      - name: health_authority_type
+        type: string
+        nullable: false
+        allowed_values: [Azienda sanitaria locale (ASL), Struttura sanitaria aziendale di tipo ospedaliero]
+        description: Source "Tipo Azienda" (1 / 2), labels verbatim from the Ministry data dictionary. Type 2 covers hospital authorities, university hospitals and IRCCS.
+      - name: facility_type_code
+        type: string
+        nullable: false
+        allowed_values: ["0", "1", "2.1", "2.2", "2.3", "3.1", "3.2", "3.3", "4", "5.1", "8", "9"]
+        description: Ministry code of the type of hospital structure.
+      - name: facility_type_name
+        type: string
+        nullable: false
+        description: Ministry description of the facility type (e.g. Casa di cura privata accreditata).
+      - name: first_year
+        type: int
+        nullable: false
+        description: First year in the gold window in which the site reports beds.
+      - name: last_year
+        type: int
+        nullable: false
+        description: Last year in the gold window in which the site reports beds. Attributes come from this year (SCD type 1).
+
+  fact_hospital_beds:
+    description: Active hospital beds on 1 January, by year, site and discipline.
+    grain: year x facility x discipline
+    primary_key: [year, facility_key, discipline_code]
+    columns:
+      - name: year
+        type: int
+        nullable: false
+        references: dim_year.year
+        description: Reference year (beds active on 1 January).
+      - name: facility_key
+        type: int
+        nullable: false
+        references: dim_facility.facility_key
+        description: Hospital site.
+      - name: discipline_code
+        type: string
+        nullable: false
+        references: dim_discipline.discipline_code
+        description: Discipline.
+      - name: region_code
+        type: string
+        nullable: false
+        references: dim_region.region_code
+        description: Region of the site, denormalised from dim_facility so that the model stays a pure star.
+      - name: ward_count
+        type: int
+        nullable: false
+        min: 0
+        description: Active wards for public sites. For private accredited clinics, 1 only flags that accredited beds exist.
+      - name: beds_ordinary
+        type: int
+        nullable: false
+        min: 0
+        description: Beds for ordinary (overnight) inpatient care.
+      - name: beds_paying
+        type: int
+        nullable: false
+        min: 0
+        description: Beds for paying ordinary inpatient care in public sites.
+      - name: beds_day_hospital
+        type: int
+        nullable: false
+        min: 0
+        description: Day-hospital beds (medical day care).
+      - name: beds_day_surgery
+        type: int
+        nullable: false
+        min: 0
+        description: Day-surgery beds (surgical day care).
+      - name: beds_total
+        type: int
+        nullable: false
+        min: 0
+        description: Sum of the four regimes. Rule enforced as a data-quality check.
+    checks:
+      - name: total_equals_sum_of_regimes
+        expression: beds_total = beds_ordinary + beds_paying + beds_day_hospital + beds_day_surgery
+
+  fact_population:
+    description: Resident population on 1 January, by year and region (ISTAT).
+    grain: year x region
+    primary_key: [year, region_code]
+    columns:
+      - name: year
+        type: int
+        nullable: false
+        references: dim_year.year
+        description: Reference year (population on 1 January).
+      - name: region_code
+        type: string
+        nullable: false
+        references: dim_region.region_code
+        description: Region or autonomous province.
+      - name: population
+        type: bigint
+        nullable: false
+        min: 1
+        description: Total resident population (both sexes, all ages).

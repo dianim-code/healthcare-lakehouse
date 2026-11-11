@@ -1,0 +1,30 @@
+name: contract-ci
+
+# Validates the committed gold sample against docs/contract/gold_schema.yml.
+on:
+  push:
+    paths:
+      - "docs/contract/**"
+      - "sample-data/**"
+      - "scripts/**"
+      - ".github/workflows/contract-ci.yml"
+  pull_request:
+    paths:
+      - "docs/contract/**"
+      - "sample-data/**"
+      - "scripts/**"
+      - ".github/workflows/contract-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Lint scripts
+        run: uvx ruff check scripts && uvx ruff format --check scripts
+      - name: Validate sample against the contract
+        run: uv run scripts/build_sample.py --check-only

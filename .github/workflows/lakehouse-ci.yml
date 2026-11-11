@@ -1,0 +1,32 @@
+name: lakehouse-ci
+
+# Lint, then the test suite on the local Spark backend. The parity test needs the raw sources: they are
+# fetched in CI when possible. If the fetch fails the step is non-blocking and the parity tests are skipped
+# with a visible reason (pytest -rs). See README.md, "Continuous integration".
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Lint and format check
+        run: uvx ruff check . && uvx ruff format --check .
+      - name: Fetch raw sources for the parity test
+        continue-on-error: true
+        run: uv run scripts/fetch_sources.py --only beds_2021 beds_2022 beds_2023 population
+      - name: Tests on the local Spark backend
+        env:
+          SPARK_BACKEND: local
+        run: uv run --group local pytest -rs

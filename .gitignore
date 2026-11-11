@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# --- Raw downloads (fetched by scripts/fetch_sources.py, never committed) ---
+data/raw/
+
+# --- Databricks ---
+.databricks/
+.bundle/
+
+# --- Power BI (PBIP) ---
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

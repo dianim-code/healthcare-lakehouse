@@ -1,0 +1,9 @@
+# Shared lint settings. Project folders may extend this file with their own ruff.toml.
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "FLY", "RUF"]
+
+[format]
+quote-style = "double"

@@ -1,0 +1,4 @@
+# Keep LF everywhere, whatever core.autocrlf says (see .editorconfig).
+* text=auto eol=lf
+*.png binary
+*.abf binary

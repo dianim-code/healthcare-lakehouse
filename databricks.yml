@@ -1,0 +1,23 @@
+# Databricks Asset Bundle for the lakehouse. The workspace host is NOT written here: it comes from the
+# Databricks CLI profile passed with -p (see README.md, "Databricks deployment").
+bundle:
+  name: healthcare_lakehouse
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog. Databricks Free Edition provides the "workspace" catalog.
+    default: workspace
+  schema:
+    description: Schema that holds the bronze, silver and gold tables.
+    default: healthcare_lakehouse
+  volume:
+    description: Volume (in the schema above) where the raw source files are uploaded.
+    default: landing
+
+targets:
+  dev:
+    mode: development
+    default: true

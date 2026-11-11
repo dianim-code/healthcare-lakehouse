@@ -1,0 +1,22 @@
+region_code,region_name,istat_region_name,istat_area_code,geographic_area,macro_area,is_autonomous_province,sort_order
+010,Piemonte,Piemonte,ITC1,Nord-ovest,Nord,false,1
+020,Valle d'Aosta,Valle d'Aosta,ITC2,Nord-ovest,Nord,false,2
+030,Lombardia,Lombardia,ITC4,Nord-ovest,Nord,false,3
+041,Provincia autonoma di Bolzano,Trentino-Alto Adige,ITD1,Nord-est,Nord,true,4
+042,Provincia autonoma di Trento,Trentino-Alto Adige,ITD2,Nord-est,Nord,true,5
+050,Veneto,Veneto,ITD3,Nord-est,Nord,false,6
+060,Friuli-Venezia Giulia,Friuli-Venezia Giulia,ITD4,Nord-est,Nord,false,7
+070,Liguria,Liguria,ITC3,Nord-ovest,Nord,false,8
+080,Emilia-Romagna,Emilia-Romagna,ITD5,Nord-est,Nord,false,9
+090,Toscana,Toscana,ITE1,Centro,Centro,false,10
+100,Umbria,Umbria,ITE2,Centro,Centro,false,11
+110,Marche,Marche,ITE3,Centro,Centro,false,12
+120,Lazio,Lazio,ITE4,Centro,Centro,false,13
+130,Abruzzo,Abruzzo,ITF1,Sud,Sud e Isole,false,14
+140,Molise,Molise,ITF2,Sud,Sud e Isole,false,15
+150,Campania,Campania,ITF3,Sud,Sud e Isole,false,16
+160,Puglia,Puglia,ITF4,Sud,Sud e Isole,false,17
+170,Basilicata,Basilicata,ITF5,Sud,Sud e Isole,false,18
+180,Calabria,Calabria,ITF6,Sud,Sud e Isole,false,19
+190,Sicilia,Sicilia,ITG1,Isole,Sud e Isole,false,20
+200,Sardegna,Sardegna,ITG2,Isole,Sud e Isole,false,21

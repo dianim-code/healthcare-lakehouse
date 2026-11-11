@@ -1,0 +1,34 @@
+resources:
+  schemas:
+    lakehouse_schema:
+      catalog_name: ${var.catalog}
+      name: ${var.schema}
+      comment: Healthcare lakehouse. Bronze, silver and gold tables built by the Lakeflow pipeline.
+
+  volumes:
+    landing:
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      name: ${var.volume}
+      volume_type: MANAGED
+      comment: Raw Ministry of Health and ISTAT files, uploaded with the databricks fs cp command in README.md.
+
+  pipelines:
+    lakehouse:
+      name: healthcare_lakehouse
+      serverless: true
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      libraries:
+        - glob:
+            include: ../pipelines/**
+      # The package is a wheel built with `uv build --wheel` and uploaded to the volume (README.md).
+      # Paths use the schema resource's resolved name: in development mode the bundle prefixes it
+      # (dev_<user>_healthcare_lakehouse), so ${var.schema} alone would point to a schema that does not exist.
+      environment:
+        dependencies:
+          - /Volumes/${var.catalog}/${resources.schemas.lakehouse_schema.name}/${var.volume}/_libs/healthcare_lakehouse-0.1.0-py3-none-any.whl
+      configuration:
+        lakehouse.raw_path: /Volumes/${var.catalog}/${resources.schemas.lakehouse_schema.name}/${var.volume}
+        lakehouse.from_year: "2019"
+        lakehouse.to_year: "2023"
