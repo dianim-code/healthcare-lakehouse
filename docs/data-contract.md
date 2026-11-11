@@ -21,53 +21,7 @@ uv run scripts/vendor_contract.py --to ../deneb-gallery --check   # exit 1 if a 
 A star schema with two fact tables at different grains that share the `year` and `region`
 dimensions.
 
-```mermaid
-erDiagram
-    dim_year       ||--o{ fact_hospital_beds : year
-    dim_region     ||--o{ fact_hospital_beds : region_code
-    dim_facility   ||--o{ fact_hospital_beds : facility_key
-    dim_discipline ||--o{ fact_hospital_beds : discipline_code
-    dim_year       ||--o{ fact_population    : year
-    dim_region     ||--o{ fact_population    : region_code
-
-    fact_hospital_beds {
-        int year PK
-        int facility_key PK
-        string discipline_code PK
-        string region_code FK
-        int ward_count
-        int beds_ordinary
-        int beds_paying
-        int beds_day_hospital
-        int beds_day_surgery
-        int beds_total
-    }
-    fact_population {
-        int year PK
-        string region_code PK
-        bigint population
-    }
-    dim_facility {
-        int facility_key PK
-        string facility_id UK
-        string region_code
-        string facility_type_code
-    }
-    dim_region {
-        string region_code PK
-        string istat_area_code UK
-        string macro_area
-    }
-    dim_discipline {
-        string discipline_code PK
-        string discipline_type
-    }
-    dim_year {
-        int year PK
-        date reference_date
-        boolean is_latest_year
-    }
-```
+![Gold data contract 1.1.0: two facts at different grains sharing dim_year and dim_region, with names, types and keys](images/gold-contract.drawio.svg)
 
 `dim_facility` also carries `region_code` as an attribute, but it has **no relationship** to
 `dim_region`. The region reaches the beds fact directly through `fact_hospital_beds.region_code`,

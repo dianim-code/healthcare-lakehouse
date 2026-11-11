@@ -10,21 +10,9 @@ explicit data contract, so the consumers do not have to.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Sources
-        M["Ministry of Health<br/>beds CSV, 2010-2023"]
-        I["ISTAT SDMX<br/>population, 2019+"]
-    end
-    V[("Unity Catalog volume<br/>landing/")]
-    M --> V
-    I --> V
-    V --> B["bronze<br/>bronze_beds, bronze_population<br/>(strings, as published)"]
-    B --> S["silver<br/>silver_beds, silver_population<br/>(C1 cleaning, types, window, C2 key)"]
-    S --> G["gold<br/>6 contract tables<br/>(C3 to C7)"]
-    G --> C1["healthcare-semantic-model<br/>Power BI"]
-    G --> C2["deneb-gallery<br/>Vega-Lite charts"]
-```
+![Architecture: public sources to a landing volume, bronze, silver and gold on Databricks; a pandas reference builds the committed sample and a parity test compares the two](docs/images/architecture.drawio.svg)
+
+*The diagrams are `.drawio.svg` files: GitHub shows them as images, and draw.io (desktop, web or the VS Code extension) opens and edits them.*
 
 - **Bronze** reads the files as strings with no inference. Nothing is changed.
 - **Silver** applies rule C1 (text cleaning), casts types, keeps the gold window and builds the site key.
